@@ -2,55 +2,150 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Círculo de Alberti: Cifra y Descifra</title>
+    <title>Cifrado de Alberti</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; }
-        .alberti-card { max-width: 400px; margin: auto; padding: 2rem 2.2rem; border-radius: 1.25rem; box-shadow: 0 0 16px #0001; background: #fff;}
-        .form-select, .form-control { margin-bottom: 1rem; }
-        .instructions { font-size: 0.96em; margin-bottom: 1.2rem; color: #444; }
+        body { 
+            min-height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            background: #f5f7fa; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .alberti-container {
+            max-width: 600px;
+            width: 100%;
+            padding: 2rem;
+        }
+        .alberti-card { 
+            padding: 2rem; 
+            border-radius: 1rem; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+            background: #fff;
+        }
+        .form-label {
+            font-weight: 500;
+            color: #495057;
+        }
+        .visual-guide {
+            background: #f8f9fa;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #0d6efd;
+        }
+        .disco-visual {
+            display: flex;
+            justify-content: center;
+            margin: 1rem 0;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+        .disco {
+            text-align: center;
+            font-weight: bold;
+        }
+        .disco-exterior {
+            color: #0d6efd;
+        }
+        .disco-interior {
+            color: #dc3545;
+        }
+        .btn-action {
+            min-width: 100px;
+        }
+        .example {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 0.5rem;
+        }
     </style>
 </head>
 <body>
-<div class="alberti-card">
-    <h3 class="text-center mb-3">Círculo de Alberti</h3>
-    <div class="instructions">
-        <b>¿Qué hace?</b> Puedes cifrar y descifrar textos usando el cifrado de Alberti.<br>
-        <b>¿Cómo usar?</b><br>
-        1. Elige el alfabeto.<br>
-        2. Escribe tu texto (mayúsculas y minúsculas permitidas).<br>
-        3. Ingresa la clave con el formato <code>Mb,5,2d</code>.<br>
-        4. Elige si deseas <b>cifrar</b> o <b>descifrar</b>.
+<div class="alberti-container">
+    <div class="alberti-card">
+        <h2 class="text-center mb-4">Cifrado de Alberti</h2>
+        
+        <div class="visual-guide">
+            <h5><i class="bi bi-info-circle"></i> ¿Cómo funciona?</h5>
+            <p>El cifrado de Alberti usa dos discos concéntricos con alfabetos diferentes. 
+            Gira el disco interior según la clave para cifrar/descifrar.</p>
+            
+            <div class="disco-visual">
+                <div class="disco disco-exterior">
+                    <div>Disco Exterior</div>
+                    <div>A B C D E F G H I J K L M N Ñ O P Q R S T U V W X Y Z</div>
+                </div>
+                <div class="disco disco-interior">
+                    <div>Disco Interior</div>
+                    <div>B D F H J L N Ñ P R T V X Z A C E G I K M O Q S U W Y</div>
+                </div>
+            </div>
+        </div>
+
+        <form method="post" action="alberti" id="albertiForm">
+            <div class="mb-3">
+                <label for="alfabeto" class="form-label">Alfabeto</label>
+                <select name="alfabeto" id="alfabeto" class="form-select" required>
+                    <option value="es">Español (A-Z incluye Ñ)</option>
+                    <option value="en">Inglés (A-Z sin Ñ)</option>
+                </select>
+            </div>
+            
+            <div class="mb-3">
+                <label for="texto" class="form-label">Texto Plano</label>
+                <textarea class="form-control" id="texto" name="texto" rows="3" 
+                    placeholder="Escribe el texto a cifrar o descifrar..." required></textarea>
+            </div>
+            
+            <div class="mb-3">
+                <label for="clave" class="form-label">Clave</label>
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" id="claveLetras" name="claveLetras" 
+                            placeholder="Ej: Mb" maxlength="2" required>
+                        <div class="example">Letra exterior + interior (Ej: Mb)</div>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="number" class="form-control" id="grupo" name="grupo" 
+                            placeholder="Tamaño grupo" min="1" required>
+                        <div class="example">Tamaño de grupo (Ej: 5)</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="rotacion" name="rotacion" 
+                                placeholder="Rotación" min="1" required>
+                            <select class="form-select" id="direccion" name="direccion" required>
+                                <option value="d">Derecha</option>
+                                <option value="i">Izquierda</option>
+                            </select>
+                        </div>
+                        <div class="example">Rotación cada grupo (Ej: 2 posiciones)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-center gap-3 mt-4">
+                <button type="submit" name="modo" value="cifrar" class="btn btn-primary btn-action">
+                    <i class="bi bi-lock"></i> Cifrar
+                </button>
+                <button type="submit" name="modo" value="descifrar" class="btn btn-success btn-action">
+                    <i class="bi bi-unlock"></i> Descifrar
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-action" onclick="resetForm()">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reiniciar
+                </button>
+            </div>
+        </form>
     </div>
-    <form method="post" action="alberti" id="albertiForm">
-        <select name="alfabeto" id="alfabeto" class="form-select" required>
-            <option value="es">Español (A-Z y Ñ)</option>
-            <option value="en">Americano (A-Z)</option>
-        </select>
-        <input type="text" class="form-control" id="texto" name="texto" placeholder="Texto aquí..." required>
-        <input type="text" class="form-control" id="clave" name="clave" placeholder="Clave (ej: Mb,5,2d)" required>
-        <div class="form-text mb-3">
-            <b>Clave:</b> <code>Mb,5,2d</code> = M (ext) con b (int), grupos de 5, rota 2 der.<br>
-            <b>Ejemplo:</b> <code>Ab,4,1i</code> = A con b, grupos de 4, rota 1 izq.<br>
-        </div>
-        <div class="d-flex justify-content-center gap-2 mb-2">
-            <button type="submit" name="modo" value="cifrar" class="btn btn-primary">Cifrar</button>
-            <button type="submit" name="modo" value="descifrar" class="btn btn-secondary">Descifrar</button>
-            <button type="button" class="btn btn-outline-success" onclick="nuevoAlberti()">Nuevo</button>
-        </div>
-    </form>
 </div>
+
 <script>
-function nuevoAlberti() {
-    document.getElementById('texto').disabled = false;
-    document.getElementById('clave').disabled = false;
-    document.getElementById('alfabeto').disabled = false;
-    document.getElementById('texto').value = '';
-    document.getElementById('clave').value = '';
-    // Habilita los botones de cifrar/descifrar en caso de estar deshabilitados
-    document.querySelectorAll('button[type=submit]').forEach(btn => btn.disabled = false);
+function resetForm() {
     document.getElementById('albertiForm').reset();
+    // Opcional: Limpiar resultados anteriores
 }
 </script>
 </body>

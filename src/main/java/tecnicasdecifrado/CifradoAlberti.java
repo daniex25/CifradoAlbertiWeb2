@@ -1,141 +1,247 @@
 package tecnicasdecifrado;
 
 public class CifradoAlberti {
-    // Alfabetos exterior/interior para ambos idiomas
-    private static final String DISCO_EXTERIOR_ESP = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
-    private static final String DISCO_INTERIOR_ESP = "BDFHJLNÑPRTVXZACEGIKMOQSUWY";
-    private static final String DISCO_EXTERIOR_AME = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    private static final String DISCO_INTERIOR_AME = "BDFHJLNPRTVXZACEGIKMOQSUWY";
 
-    public static String[] procesarClave(String claveCompleta, boolean esEspanol) {
+    // Alfabetos predefinidos
+    public static final String DISCO_EXTERIOR_ESP = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
+    public static final String DISCO_INTERIOR_ESP = "BDFHJLNÑPRTVXZACEGIKMOQSUWY";
+    public static final String DISCO_EXTERIOR_ENG = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    public static final String DISCO_INTERIOR_ENG = "BDFHJLNPRTVXZACEGIKMOQSUWY";
+
+    // Clase para encapsular la configuración del cifrado
+    public static class Configuracion {
+
+        private final String discoExterior;
+        private final String discoInterior;
+        private int desplazamiento;
+        private final int tamanoGrupo;
+        private final int rotacion;
+        private final char direccionRotacion;
+
+        public Configuracion(String discoExterior, String discoInterior,
+                int desplazamientoInicial, int tamanoGrupo,
+                int rotacion, char direccionRotacion) {
+            this.discoExterior = discoExterior;
+            this.discoInterior = discoInterior;
+            this.desplazamiento = desplazamientoInicial;
+            this.tamanoGrupo = tamanoGrupo;
+            this.rotacion = rotacion;
+            this.direccionRotacion = Character.toLowerCase(direccionRotacion);
+        }
+
+        // Getters
+        public String getDiscoExterior() {
+            return discoExterior;
+        }
+
+        public String getDiscoInterior() {
+            return discoInterior;
+        }
+
+        public int getDesplazamiento() {
+            return desplazamiento;
+        }
+
+        public int getTamanoGrupo() {
+            return tamanoGrupo;
+        }
+
+        public int getRotacion() {
+            return rotacion;
+        }
+
+        public char getDireccionRotacion() {
+            return direccionRotacion;
+        }
+
+        // Rotar el disco según la dirección configurada
+        public void rotar() {
+            if (direccionRotacion == 'd') {
+                desplazamiento += rotacion;
+            } else {
+                desplazamiento -= rotacion;
+            }
+            // Asegurar que el desplazamiento sea positivo
+            desplazamiento = (desplazamiento + discoInterior.length()) % discoInterior.length();
+        }
+    }
+
+    /**
+     * Cifra un texto usando el cifrado de Alberti
+     *
+     * @param texto Texto a cifrar
+     * @param clave Clave en formato "Mb,5,2d"
+     * @param esEspanol true para alfabeto español (incluye Ñ), false para
+     * inglés
+     * @return Texto cifrado
+     */
+    public static String cifrar(String texto, String clave, boolean esEspanol) {
+        String discoExt = esEspanol ? DISCO_EXTERIOR_ESP : DISCO_EXTERIOR_ENG;
+        String discoInt = esEspanol ? DISCO_INTERIOR_ESP : DISCO_INTERIOR_ENG;
+        Configuracion config = parsearClave(clave, discoExt, discoInt);
+        return procesarTexto(texto, config, true);
+    }
+
+    /**
+     * Descifra un texto usando el cifrado de Alberti
+     *
+     * @param texto Texto a descifrar
+     * @param clave Clave en formato "Mb,5,2d"
+     * @param esEspanol true para alfabeto español (incluye Ñ), false para
+     * inglés
+     * @return Texto descifrado
+     */
+    public static String descifrar(String texto, String clave, boolean esEspanol) {
+        String discoExt = esEspanol ? DISCO_EXTERIOR_ESP : DISCO_EXTERIOR_ENG;
+        String discoInt = esEspanol ? DISCO_INTERIOR_ESP : DISCO_INTERIOR_ENG;
+        Configuracion config = parsearClave(clave, discoExt, discoInt);
+        return procesarTexto(texto, config, false);
+    }
+
+    /**
+     * Procesa el texto (cifrado o descifrado)
+     */
+    private static String procesarTexto(String texto, Configuracion config, boolean cifrar) {
+        StringBuilder resultado = new StringBuilder();
+
+        for (int i = 0; i < texto.length(); i++) {
+            // Rotar disco al inicio de cada grupo (excepto el primero)
+            if (i > 0 && i % config.getTamanoGrupo() == 0) {
+                config.rotar();
+            }
+
+            char original = texto.charAt(i);
+            resultado.append(procesarCaracter(original, config, cifrar));
+        }
+
+        return resultado.toString();
+    }
+
+    /**
+     * Procesa un carácter individual
+     */
+    private static char procesarCaracter(char c, Configuracion config, boolean cifrar) {
+        // Mantener caracteres no alfabéticos sin cambios
+        if (!Character.isLetter(c)) {
+            return c;
+        }
+
+        boolean esMinuscula = Character.isLowerCase(c);
+        char letra = Character.toUpperCase(c);
+        char resultado;
+
+        if (cifrar) {
+            // Cifrado: buscar en exterior y mapear a interior
+            int pos = config.getDiscoExterior().indexOf(letra);
+            if (pos == -1) {
+                return c; // Si no está en el disco, dejarlo igual
+            }
+            int nuevaPos = (pos + config.getDesplazamiento()) % config.getDiscoInterior().length();
+            resultado = config.getDiscoInterior().charAt(nuevaPos);
+        } else {
+            // Descifrado: buscar en interior y mapear a exterior
+            int pos = config.getDiscoInterior().indexOf(letra);
+            if (pos == -1) {
+                return c; // Si no está en el disco, dejarlo igual
+            }
+            int nuevaPos = (pos - config.getDesplazamiento() + config.getDiscoExterior().length())
+                    % config.getDiscoExterior().length();
+            resultado = config.getDiscoExterior().charAt(nuevaPos);
+        }
+
+        // Mantener mayúscula/minúscula original
+        return esMinuscula ? Character.toLowerCase(resultado) : resultado;
+    }
+
+    /**
+     * Parsea y valida la clave de cifrado
+     */
+    public static Configuracion parsearClave(String clave, String discoExt, String discoInt) {
+        if (clave == null || clave.trim().isEmpty()) {
+            throw new IllegalArgumentException("La clave no puede estar vacía");
+        }
+
+        String[] partes = clave.trim().split("\\s*,\\s*");
+        if (partes.length != 3) {
+            throw new IllegalArgumentException("Formato de clave inválido. Debe ser: letras,tamañoGrupo,rotaciónDirección");
+        }
+
+        // Validar letras clave
+        String letras = partes[0].trim();
+        if (letras.length() != 2) {
+            throw new IllegalArgumentException("Las letras clave deben ser exactamente 2 caracteres");
+        }
+
+        char letraExt = Character.toUpperCase(letras.charAt(0));
+        char letraInt = letras.charAt(1);
+
+        if (discoExt.indexOf(letraExt) == -1) {
+            throw new IllegalArgumentException("Letra exterior '" + letraExt + "' no encontrada en el disco exterior");
+        }
+
+        if (discoInt.indexOf(Character.toUpperCase(letraInt)) == -1
+                && discoInt.indexOf(Character.toLowerCase(letraInt)) == -1) {
+            throw new IllegalArgumentException("Letra interior '" + letraInt + "' no encontrada en el disco interior");
+        }
+
+        // Validar tamaño de grupo
+        int tamanoGrupo;
         try {
-            claveCompleta = claveCompleta.replaceAll("[()]", "").trim();
-            String[] partes = claveCompleta.split("\\s*,\\s*");
-            if (partes.length != 3) return null;
-            String regexLetras = esEspanol ? "[A-Za-zÑñ]{2}" : "[A-Za-z]{2}";
-            if (!partes[0].matches(regexLetras) || 
-                !partes[1].matches("\\d+") || 
-                !partes[2].matches("\\d+[diDI]")) {
-                return null;
+            tamanoGrupo = Integer.parseInt(partes[1].trim());
+            if (tamanoGrupo <= 0) {
+                throw new IllegalArgumentException("El tamaño de grupo debe ser mayor que cero");
             }
-            return partes;
-        } catch (Exception e) {
-            return null;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Tamaño de grupo inválido: " + partes[1]);
         }
-    }
 
-    public static boolean validarParametros(
-        char letraExterior, 
-        char letraInterior, 
-        int tamanoGrupo, 
-        int rotacion, 
-        char direccion,
-        String discoExterior,
-        String discoInterior
-    ) {
-        if (discoExterior.indexOf(Character.toUpperCase(letraExterior)) == -1) return false;
-        if (discoInterior.indexOf(Character.toLowerCase(letraInterior)) == -1 &&
-            discoInterior.indexOf(Character.toUpperCase(letraInterior)) == -1) return false;
-        if (tamanoGrupo <= 0) return false;
-        if (rotacion <= 0) return false;
-        if (direccion != 'd' && direccion != 'D' && direccion != 'i' && direccion != 'I') return false;
-        return true;
-    }
-
-    // Soporta mayúsculas y minúsculas en la salida según el texto original
-    public static String cifrarAlberti(
-        String texto, 
-        char letraExterior, 
-        char letraInterior, 
-        int tamanoGrupo, 
-        int rotacion, 
-        char direccionRotacion,
-        String discoExterior,
-        String discoInterior,
-        int moduloAlfabeto,
-        String textoOriginal // Nuevo: para mantener las mayúsculas y minúsculas originales
-    ) {
-        StringBuilder resultado = new StringBuilder();
-        int posExterior = discoExterior.indexOf(Character.toUpperCase(letraExterior));
-        int posInterior = discoInterior.indexOf(Character.toLowerCase(letraInterior));
-        if (posInterior == -1) posInterior = discoInterior.indexOf(Character.toUpperCase(letraInterior));
-        int desplazamientoInicial = (posInterior - posExterior) % moduloAlfabeto;
-        if (desplazamientoInicial < 0) desplazamientoInicial += moduloAlfabeto;
-        int rotacionAcumulada = 0;
-        int idxTexto = 0;
-        for (int i = 0; i < texto.length(); i++) {
-            if (i > 0 && i % tamanoGrupo == 0) {
-                if (direccionRotacion == 'd' || direccionRotacion == 'D') {
-                    rotacionAcumulada += rotacion;
-                } else {
-                    rotacionAcumulada -= rotacion;
-                }
-            }
-            char c = texto.charAt(i);
-            char cOrig = textoOriginal.charAt(idxTexto++);
-            int posExteriorActual = discoExterior.indexOf(Character.toUpperCase(c));
-            if (posExteriorActual != -1) {
-                int posInteriorActual = (posExteriorActual + desplazamientoInicial + rotacionAcumulada) % moduloAlfabeto;
-                if (posInteriorActual < 0) posInteriorActual += moduloAlfabeto;
-                char cifrado = discoInterior.charAt(posInteriorActual);
-                // Mantener mayúsculas/minúsculas
-                resultado.append(Character.isLowerCase(cOrig) ? Character.toLowerCase(cifrado) : cifrado);
-            }
+        // Validar rotación y dirección
+        String rotacionDir = partes[2].trim().toLowerCase();
+        if (rotacionDir.length() < 2) {
+            throw new IllegalArgumentException("Formato de rotación inválido. Debe ser: número + dirección (d/i)");
         }
-        return resultado.toString();
-    }
 
-    // Descifrado: busca en el disco interior y mapea al exterior, respetando mayus/minus de entrada
-    public static String descifrarAlberti(
-        String texto, 
-        char letraExterior, 
-        char letraInterior, 
-        int tamanoGrupo, 
-        int rotacion, 
-        char direccionRotacion,
-        String discoExterior,
-        String discoInterior,
-        int moduloAlfabeto,
-        String textoOriginal
-    ) {
-        StringBuilder resultado = new StringBuilder();
-        int posExterior = discoExterior.indexOf(Character.toUpperCase(letraExterior));
-        int posInterior = discoInterior.indexOf(Character.toLowerCase(letraInterior));
-        if (posInterior == -1) posInterior = discoInterior.indexOf(Character.toUpperCase(letraInterior));
-        int desplazamientoInicial = (posInterior - posExterior) % moduloAlfabeto;
-        if (desplazamientoInicial < 0) desplazamientoInicial += moduloAlfabeto;
-        int rotacionAcumulada = 0;
-        int idxTexto = 0;
-        for (int i = 0; i < texto.length(); i++) {
-            if (i > 0 && i % tamanoGrupo == 0) {
-                if (direccionRotacion == 'd' || direccionRotacion == 'D') {
-                    rotacionAcumulada += rotacion;
-                } else {
-                    rotacionAcumulada -= rotacion;
-                }
+        int rotacion;
+        try {
+            rotacion = Integer.parseInt(rotacionDir.substring(0, rotacionDir.length() - 1));
+            if (rotacion <= 0) {
+                throw new IllegalArgumentException("La rotación debe ser mayor que cero");
             }
-            char c = texto.charAt(i);
-            char cOrig = textoOriginal.charAt(idxTexto++);
-            int posInteriorActual = discoInterior.indexOf(Character.toUpperCase(c));
-            if (posInteriorActual == -1) posInteriorActual = discoInterior.indexOf(Character.toLowerCase(c));
-            if (posInteriorActual != -1) {
-                int posExteriorActual = (posInteriorActual - desplazamientoInicial - rotacionAcumulada) % moduloAlfabeto;
-                if (posExteriorActual < 0) posExteriorActual += moduloAlfabeto;
-                char descifrado = discoExterior.charAt(posExteriorActual);
-                // Mantener mayúsculas/minúsculas
-                resultado.append(Character.isLowerCase(cOrig) ? Character.toLowerCase(descifrado) : descifrado);
-            }
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Rotación inválida: " + rotacionDir.substring(0, rotacionDir.length() - 1));
         }
-        return resultado.toString();
+
+        char direccion = rotacionDir.charAt(rotacionDir.length() - 1);
+        if (direccion != 'd' && direccion != 'i') {
+            throw new IllegalArgumentException("Dirección de rotación inválida. Use 'd' (derecha) o 'i' (izquierda)");
+        }
+
+        // Calcular desplazamiento inicial
+        int posExt = discoExt.indexOf(letraExt);
+        int posInt = discoInt.indexOf(letraInt);
+        int desplazamientoInicial = (posInt - posExt + discoExt.length()) % discoExt.length();
+
+        return new Configuracion(discoExt, discoInt, desplazamientoInicial, tamanoGrupo, rotacion, direccion);
     }
 
+    /**
+     * Obtiene el disco exterior según el idioma
+     */
     public static String getDiscoExterior(boolean esEspanol) {
-        return esEspanol ? DISCO_EXTERIOR_ESP : DISCO_EXTERIOR_AME;
+        return esEspanol ? DISCO_EXTERIOR_ESP : DISCO_EXTERIOR_ENG;
     }
+
+    /**
+     * Obtiene el disco interior según el idioma
+     */
     public static String getDiscoInterior(boolean esEspanol) {
-        return esEspanol ? DISCO_INTERIOR_ESP : DISCO_INTERIOR_AME;
+        return esEspanol ? DISCO_INTERIOR_ESP : DISCO_INTERIOR_ENG;
     }
+
+    /**
+     * Obtiene el tamaño del alfabeto según el idioma
+     */
     public static int getModuloAlfabeto(boolean esEspanol) {
-        return esEspanol ? 27 : 26;
+        return esEspanol ? DISCO_EXTERIOR_ESP.length() : DISCO_EXTERIOR_ENG.length();
     }
 }
