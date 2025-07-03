@@ -161,8 +161,9 @@ public class CifradoAlbertiServlet extends HttpServlet {
             out.println("<link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css'>");
             out.println("<style>");
             out.println("body { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f5f7fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }");
-            out.println(".alberti-container { max-width: 600px; width: 100%; padding: 2rem; }");
+            out.println(".alberti-container { max-width: 800px; width: 100%; padding: 2rem; }"); // Cambiado de 600px a 800px
             out.println(".alberti-card { padding: 2rem; border-radius: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1); background: #fff; }");
+            out.println(".result-container { max-width: 800px; width: 100%; }"); // Nuevo estilo para el contenedor de resultados
             out.println(".form-label { font-weight: 500; color: #495057; }");
             out.println(".visual-guide { background: #f8f9fa; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem; border-left: 4px solid #0d6efd; }");
             out.println(".disco-visual { display: flex; justify-content: center; margin: 1rem 0; gap: 2rem; flex-wrap: wrap; }");
@@ -171,7 +172,8 @@ public class CifradoAlbertiServlet extends HttpServlet {
             out.println(".disco-interior { color: #dc3545; }");
             out.println(".btn-action { min-width: 100px; }");
             out.println(".example { font-size: 0.9em; color: #6c757d; margin-top: 0.5rem; }");
-            out.println(".result-disks { font-family: monospace; letter-spacing: 2px; }");
+            out.println(".result-disks { font-family: monospace; letter-spacing: 2px; white-space: nowrap; overflow-x: auto; }"); // Añadido white-space y overflow
+            out.println(".result-text { word-break: break-all; }"); // Nuevo estilo para el texto de resultado
             out.println("</style>");
             out.println("</head>");
             out.println("<body>");
@@ -192,7 +194,7 @@ public class CifradoAlbertiServlet extends HttpServlet {
             // Alfabeto
             out.println("<div class='mb-3'>");
             out.println("<label for='alfabeto' class='form-label'>Alfabeto</label>");
-            out.println("<select name='alfabeto' id='alfabeto' class='form-select' required>");
+            out.println("<select name='alfabeto' id='alfabeto' class='form-select' required " + (error == null && !resultado.isEmpty() ? "disabled" : "") + ">");
             for (int i = 0; i < ALFABETOS.length; i++) {
                 out.printf("<option value='%s'%s>%s</option>",
                         ALFABETO_VALUES[i],
@@ -205,7 +207,7 @@ public class CifradoAlbertiServlet extends HttpServlet {
             // Texto
             out.println("<div class='mb-3'>");
             out.println("<label for='texto' class='form-label'>Texto Plano</label>");
-            out.printf("<textarea class='form-control' id='texto' name='texto' rows='3' placeholder='Escribe el texto a cifrar o descifrar...' required>%s</textarea>",
+            out.printf("<textarea class='form-control' id='texto' name='texto' rows='3' placeholder='Escribe el texto a cifrar o descifrar...' required " + (error == null && !resultado.isEmpty() ? "disabled" : "") + ">%s</textarea>",
                     textoOriginal != null ? textoOriginal : "");
             out.println("</div>");
 
@@ -216,14 +218,14 @@ public class CifradoAlbertiServlet extends HttpServlet {
 
             // Letras clave
             out.println("<div class='col-md-4'>");
-            out.printf("<input type='text' class='form-control' id='claveLetras' name='claveLetras' placeholder='Ej: Mb' maxlength='2' required value='%s'>",
+            out.printf("<input type='text' class='form-control' id='claveLetras' name='claveLetras' placeholder='Ej: Mb' maxlength='2' required " + (error == null && !resultado.isEmpty() ? "disabled" : "") + " value='%s'>",
                     request.getParameter("claveLetras") != null ? request.getParameter("claveLetras") : "");
             out.println("<div class='example'>Letra exterior + interior (Ej: Mb)</div>");
             out.println("</div>");
 
             // Tamaño grupo
             out.println("<div class='col-md-4'>");
-            out.printf("<input type='number' class='form-control' id='grupo' name='grupo' placeholder='Tamaño grupo' min='1' required value='%s'>",
+            out.printf("<input type='number' class='form-control' id='grupo' name='grupo' placeholder='Tamaño grupo' min='1' required " + (error == null && !resultado.isEmpty() ? "disabled" : "") + " value='%s'>",
                     request.getParameter("grupo") != null ? request.getParameter("grupo") : "5");
             out.println("<div class='example'>Tamaño de grupo (Ej: 5)</div>");
             out.println("</div>");
@@ -231,9 +233,9 @@ public class CifradoAlbertiServlet extends HttpServlet {
             // Rotación
             out.println("<div class='col-md-4'>");
             out.println("<div class='input-group'>");
-            out.printf("<input type='number' class='form-control' id='rotacion' name='rotacion' placeholder='Rotación' min='1' required value='%s'>",
+            out.printf("<input type='number' class='form-control' id='rotacion' name='rotacion' placeholder='Rotación' min='1' required " + (error == null && !resultado.isEmpty() ? "disabled" : "") + " value='%s'>",
                     request.getParameter("rotacion") != null ? request.getParameter("rotacion") : "2");
-            out.println("<select class='form-select' id='direccion' name='direccion' required>");
+            out.println("<select class='form-select' id='direccion' name='direccion' required " + (error == null && !resultado.isEmpty() ? "disabled" : "") + ">");
             out.printf("<option value='d'%s>Derecha</option>",
                     "d".equalsIgnoreCase(request.getParameter("direccion")) ? " selected" : "");
             out.printf("<option value='i'%s>Izquierda</option>",
@@ -247,10 +249,12 @@ public class CifradoAlbertiServlet extends HttpServlet {
 
             // Botones
             out.println("<div class='d-flex justify-content-center gap-3 mt-4'>");
-            out.println("<button type='submit' name='modo' value='cifrar' class='btn btn-primary btn-action'>");
+            out.printf("<button type='submit' name='modo' value='cifrar' class='btn btn-primary btn-action' %s>",
+                    (error == null && !resultado.isEmpty() ? "disabled" : ""));
             out.println("<i class='bi bi-lock'></i> Cifrar");
             out.println("</button>");
-            out.println("<button type='submit' name='modo' value='descifrar' class='btn btn-success btn-action'>");
+            out.printf("<button type='submit' name='modo' value='descifrar' class='btn btn-success btn-action' %s>",
+                    (error == null && !resultado.isEmpty() ? "disabled" : ""));
             out.println("<i class='bi bi-unlock'></i> Descifrar");
             out.println("</button>");
             out.println("<button type='button' class='btn btn-outline-secondary btn-action' onclick='resetForm()'>");
@@ -262,6 +266,7 @@ public class CifradoAlbertiServlet extends HttpServlet {
 
             // Mostrar resultados si no hay error
             if (error == null && !resultado.isEmpty()) {
+                out.println("<div class='result-container'>"); // Nuevo contenedor más ancho para resultados
                 out.println("<div class='alert alert-success mt-4'>");
                 out.println("<h5 class='alert-heading'><i class='bi bi-check-circle'></i> Resultado del " + ("descifrar".equals(modo) ? "descifrado" : "cifrado") + "</h5>");
                 out.println("<hr>");
@@ -269,7 +274,7 @@ public class CifradoAlbertiServlet extends HttpServlet {
                 out.println("<div class='row'>");
                 out.println("<div class='col-md-6'>");
                 out.println("<p><strong><i class='bi bi-translate'></i> Alfabeto:</strong> " + nombreAlfabeto + "</p>");
-                out.println("<p><strong><i class='bi bi-text-left'></i> Texto Plano:</strong><br>" + textoOriginal + "</p>");
+                out.println("<p class='result-text'><strong><i class='bi bi-text-left'></i> Texto Plano:</strong><br>" + textoOriginal + "</p>");
                 out.println("<p><strong><i class='bi bi-key'></i> Clave usada:</strong> " + claveUsada + "</p>");
                 out.println("<p><strong><i class='bi bi-arrow-left-right'></i> Alineación:</strong> " + alineacion + "</p>");
                 out.println("</div>");
@@ -282,8 +287,9 @@ public class CifradoAlbertiServlet extends HttpServlet {
                 out.println("</div>");
 
                 out.println("<hr>");
-                out.println("<p class='mb-0'><strong><i class='bi bi-" + ("descifrar".equals(modo) ? "unlock" : "lock") + "'></i> " + ("descifrar".equals(modo) ? "Texto descifrado" : "Criptograma") + ":</strong><br>" + resultado + "</p>");
+                out.println("<p class='mb-0 result-text'><strong><i class='bi bi-" + ("descifrar".equals(modo) ? "unlock" : "lock") + "'></i> " + ("descifrar".equals(modo) ? "Texto descifrado" : "Criptograma") + ":</strong><br>" + resultado + "</p>");
                 out.println("</div>");
+                out.println("</div>"); // Cierre del nuevo contenedor de resultados
             }
 
             // Script para resetear el formulario
@@ -295,6 +301,14 @@ public class CifradoAlbertiServlet extends HttpServlet {
             out.println("  document.getElementById('grupo').value = '5';");
             out.println("  document.getElementById('rotacion').value = '2';");
             out.println("  document.getElementById('direccion').value = 'd';");
+            out.println("  document.getElementById('alfabeto').disabled = false;");
+            out.println("  document.getElementById('texto').disabled = false;");
+            out.println("  document.getElementById('claveLetras').disabled = false;");
+            out.println("  document.getElementById('grupo').disabled = false;");
+            out.println("  document.getElementById('rotacion').disabled = false;");
+            out.println("  document.getElementById('direccion').disabled = false;");
+            out.println("  document.querySelector('button[name=\"modo\"][value=\"cifrar\"]').disabled = false;");
+            out.println("  document.querySelector('button[name=\"modo\"][value=\"descifrar\"]').disabled = false;");
             out.println("}");
             out.println("</script>");
 
