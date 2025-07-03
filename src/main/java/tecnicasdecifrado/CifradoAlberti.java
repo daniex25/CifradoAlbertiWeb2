@@ -2,13 +2,13 @@ package tecnicasdecifrado;
 
 public class CifradoAlberti {
 
-    // Alfabetos predefinidos
+    // Alfabetos
     public static final String DISCO_EXTERIOR_ESP = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
     public static final String DISCO_INTERIOR_ESP = "BDFHJLNÑPRTVXZACEGIKMOQSUWY";
     public static final String DISCO_EXTERIOR_ENG = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     public static final String DISCO_INTERIOR_ENG = "BDFHJLNPRTVXZACEGIKMOQSUWY";
 
-    // Clase para encapsular la configuración del cifrado
+    // aquí encapsulo la configuracióin del cifrado
     public static class Configuracion {
 
         private final String discoExterior;
@@ -29,7 +29,6 @@ public class CifradoAlberti {
             this.direccionRotacion = Character.toLowerCase(direccionRotacion);
         }
 
-        // Getters
         public String getDiscoExterior() {
             return discoExterior;
         }
@@ -54,27 +53,17 @@ public class CifradoAlberti {
             return direccionRotacion;
         }
 
-        // Rotar el disco según la dirección configurada
         public void rotar() {
             if (direccionRotacion == 'd') {
                 desplazamiento += rotacion;
             } else {
                 desplazamiento -= rotacion;
             }
-            // Asegurar que el desplazamiento sea positivo
             desplazamiento = (desplazamiento + discoInterior.length()) % discoInterior.length();
         }
     }
 
-    /**
-     * Cifra un texto usando el cifrado de Alberti
-     *
-     * @param texto Texto a cifrar
-     * @param clave Clave en formato "Mb,5,2d"
-     * @param esEspanol true para alfabeto español (incluye Ñ), false para
-     * inglés
-     * @return Texto cifrado
-     */
+
     public static String cifrar(String texto, String clave, boolean esEspanol) {
         String discoExt = esEspanol ? DISCO_EXTERIOR_ESP : DISCO_EXTERIOR_ENG;
         String discoInt = esEspanol ? DISCO_INTERIOR_ESP : DISCO_INTERIOR_ENG;
@@ -82,15 +71,7 @@ public class CifradoAlberti {
         return procesarTexto(texto, config, true);
     }
 
-    /**
-     * Descifra un texto usando el cifrado de Alberti
-     *
-     * @param texto Texto a descifrar
-     * @param clave Clave en formato "Mb,5,2d"
-     * @param esEspanol true para alfabeto español (incluye Ñ), false para
-     * inglés
-     * @return Texto descifrado
-     */
+
     public static String descifrar(String texto, String clave, boolean esEspanol) {
         String discoExt = esEspanol ? DISCO_EXTERIOR_ESP : DISCO_EXTERIOR_ENG;
         String discoInt = esEspanol ? DISCO_INTERIOR_ESP : DISCO_INTERIOR_ENG;
@@ -98,9 +79,7 @@ public class CifradoAlberti {
         return procesarTexto(texto, config, false);
     }
 
-    /**
-     * Procesa el texto (cifrado o descifrado)
-     */
+
     private static String procesarTexto(String texto, Configuracion config, boolean cifrar) {
         StringBuilder resultado = new StringBuilder();
 
@@ -117,11 +96,9 @@ public class CifradoAlberti {
         return resultado.toString();
     }
 
-    /**
-     * Procesa un carácter individual
-     */
+
     private static char procesarCaracter(char c, Configuracion config, boolean cifrar) {
-        // Mantener caracteres no alfabéticos sin cambios
+
         if (!Character.isLetter(c)) {
             return c;
         }
@@ -131,31 +108,26 @@ public class CifradoAlberti {
         char resultado;
 
         if (cifrar) {
-            // Cifrado: buscar en exterior y mapear a interior
             int pos = config.getDiscoExterior().indexOf(letra);
             if (pos == -1) {
-                return c; // Si no está en el disco, dejarlo igual
+                return c; 
             }
             int nuevaPos = (pos + config.getDesplazamiento()) % config.getDiscoInterior().length();
             resultado = config.getDiscoInterior().charAt(nuevaPos);
         } else {
-            // Descifrado: buscar en interior y mapear a exterior
+
             int pos = config.getDiscoInterior().indexOf(letra);
             if (pos == -1) {
-                return c; // Si no está en el disco, dejarlo igual
+                return c; 
             }
             int nuevaPos = (pos - config.getDesplazamiento() + config.getDiscoExterior().length())
                     % config.getDiscoExterior().length();
             resultado = config.getDiscoExterior().charAt(nuevaPos);
         }
 
-        // Mantener mayúscula/minúscula original
         return esMinuscula ? Character.toLowerCase(resultado) : resultado;
     }
 
-    /**
-     * Parsea y valida la clave de cifrado
-     */
     public static Configuracion parsearClave(String clave, String discoExt, String discoInt) {
         if (clave == null || clave.trim().isEmpty()) {
             throw new IllegalArgumentException("La clave no puede estar vacía");
@@ -166,7 +138,7 @@ public class CifradoAlberti {
             throw new IllegalArgumentException("Formato de clave inválido. Debe ser: letras,tamañoGrupo,rotaciónDirección");
         }
 
-        // Validar letras clave
+
         String letras = partes[0].trim();
         if (letras.length() != 2) {
             throw new IllegalArgumentException("Las letras clave deben ser exactamente 2 caracteres");
@@ -184,7 +156,7 @@ public class CifradoAlberti {
             throw new IllegalArgumentException("Letra interior '" + letraInt + "' no encontrada en el disco interior");
         }
 
-        // Validar tamaño de grupo
+ 
         int tamanoGrupo;
         try {
             tamanoGrupo = Integer.parseInt(partes[1].trim());
@@ -195,7 +167,7 @@ public class CifradoAlberti {
             throw new IllegalArgumentException("Tamaño de grupo inválido: " + partes[1]);
         }
 
-        // Validar rotación y dirección
+
         String rotacionDir = partes[2].trim().toLowerCase();
         if (rotacionDir.length() < 2) {
             throw new IllegalArgumentException("Formato de rotación inválido. Debe ser: número + dirección (d/i)");
@@ -216,7 +188,6 @@ public class CifradoAlberti {
             throw new IllegalArgumentException("Dirección de rotación inválida. Use 'd' (derecha) o 'i' (izquierda)");
         }
 
-        // Calcular desplazamiento inicial
         int posExt = discoExt.indexOf(letraExt);
         int posInt = discoInt.indexOf(letraInt);
         int desplazamientoInicial = (posInt - posExt + discoExt.length()) % discoExt.length();
@@ -224,23 +195,16 @@ public class CifradoAlberti {
         return new Configuracion(discoExt, discoInt, desplazamientoInicial, tamanoGrupo, rotacion, direccion);
     }
 
-    /**
-     * Obtiene el disco exterior según el idioma
-     */
+
     public static String getDiscoExterior(boolean esEspanol) {
         return esEspanol ? DISCO_EXTERIOR_ESP : DISCO_EXTERIOR_ENG;
     }
 
-    /**
-     * Obtiene el disco interior según el idioma
-     */
+
     public static String getDiscoInterior(boolean esEspanol) {
         return esEspanol ? DISCO_INTERIOR_ESP : DISCO_INTERIOR_ENG;
     }
 
-    /**
-     * Obtiene el tamaño del alfabeto según el idioma
-     */
     public static int getModuloAlfabeto(boolean esEspanol) {
         return esEspanol ? DISCO_EXTERIOR_ESP.length() : DISCO_EXTERIOR_ENG.length();
     }

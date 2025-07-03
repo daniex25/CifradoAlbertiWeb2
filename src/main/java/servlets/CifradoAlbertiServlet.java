@@ -13,12 +13,12 @@ public class CifradoAlbertiServlet extends HttpServlet {
     private static final String[] ALFABETOS = {"Español (A-Z y Ñ)", "Americano (A-Z)"};
     private static final String[] ALFABETO_VALUES = {"es", "en"};
     private static final String[] DISCOS_EXTERIOR = {
-        "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ", // Español
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ" // Americano
+        "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ", 
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ" 
     };
     private static final String[] DISCOS_INTERIOR = {
-        "BDFHJLNÑPRTVXZACEGIKMOQSUWY", // Español
-        "BDFHJLNPRTVXZACEGIKMOQSUWY" // Americano
+        "BDFHJLNÑPRTVXZACEGIKMOQSUWY",  
+        "BDFHJLNPRTVXZACEGIKMOQSUWY"  
     };
 
     @Override
@@ -28,7 +28,6 @@ public class CifradoAlbertiServlet extends HttpServlet {
         request.setCharacterEncoding("UTF-8");
         response.setContentType("text/html;charset=UTF-8");
 
-        // Obtener parámetros
         String textoOriginal = request.getParameter("texto");
         String alfabeto = request.getParameter("alfabeto");
         String claveLetras = request.getParameter("claveLetras");
@@ -37,7 +36,6 @@ public class CifradoAlbertiServlet extends HttpServlet {
         String direccion = request.getParameter("direccion");
         String modo = request.getParameter("modo");
 
-        // Procesar dirección (aceptar "derecha" o "izquierda" además de "d"/"i")
         if (direccion != null) {
             if (direccion.toLowerCase().startsWith("d")) {
                 direccion = "d";
@@ -46,16 +44,13 @@ public class CifradoAlbertiServlet extends HttpServlet {
             }
         }
 
-        // Determinar índice del alfabeto
         int indexAlfabeto = "en".equals(alfabeto) ? 1 : 0;
         String nombreAlfabeto = ALFABETOS[indexAlfabeto];
         String discoExt = DISCOS_EXTERIOR[indexAlfabeto];
         String discoInt = DISCOS_INTERIOR[indexAlfabeto];
 
-        // Procesar texto (mantener mayúsculas/minúsculas originales)
         String textoLimpio = textoOriginal.replaceAll(indexAlfabeto == 0 ? "[^A-Za-zÑñ]" : "[^A-Za-z]", "");
 
-        // Validaciones
         String error = validarEntrada(textoLimpio, claveLetras, grupo, rotacion, direccion, discoExt, discoInt);
 
         String resultado = "";
@@ -64,14 +59,12 @@ public class CifradoAlbertiServlet extends HttpServlet {
 
         if (error == null) {
             try {
-                // Construir clave en formato para CifradoAlberti
                 claveUsada = String.format("%s,%s,%s%s", claveLetras, grupo, rotacion, direccion);
 
                 char letraExterior = claveLetras.toUpperCase().charAt(0);
-                char letraInterior = claveLetras.charAt(1); // No forzar minúscula
+                char letraInterior = claveLetras.charAt(1); 
                 alineacion = letraExterior + " (ext) → " + letraInterior + " (int)";
 
-                // Usar los nuevos métodos de CifradoAlberti
                 boolean esEspanol = "es".equals(alfabeto);
                 if ("descifrar".equals(modo)) {
                     resultado = CifradoAlberti.descifrar(textoLimpio, claveUsada, esEspanol);
@@ -83,7 +76,6 @@ public class CifradoAlbertiServlet extends HttpServlet {
             }
         }
 
-        // Generar respuesta HTML
         generarRespuesta(response, request, textoOriginal, resultado, error,
                 nombreAlfabeto, claveUsada, alineacion, discoExt, discoInt, modo);
     }
@@ -95,7 +87,6 @@ public class CifradoAlbertiServlet extends HttpServlet {
             return "Ingresa un texto válido (solo letras permitidas).";
         }
 
-        // Validar letras en el texto
         for (char c : textoLimpio.toCharArray()) {
             char mayus = Character.toUpperCase(c);
             if (discoExt.indexOf(mayus) == -1) {
@@ -108,13 +99,12 @@ public class CifradoAlbertiServlet extends HttpServlet {
         }
 
         char letraExt = claveLetras.toUpperCase().charAt(0);
-        char letraInt = claveLetras.charAt(1); // No forzar minúscula
+        char letraInt = claveLetras.charAt(1); 
 
         if (discoExt.indexOf(letraExt) == -1) {
             return "Letra exterior no encontrada en el disco exterior";
         }
 
-        // Aceptar mayúscula o minúscula en letra interior
         if (discoInt.indexOf(Character.toUpperCase(letraInt)) == -1 && 
             discoInt.indexOf(Character.toLowerCase(letraInt)) == -1) {
             return "Letra interior '" + letraInt + "' no encontrada en el disco interior";
@@ -161,9 +151,9 @@ public class CifradoAlbertiServlet extends HttpServlet {
             out.println("<link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css'>");
             out.println("<style>");
             out.println("body { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f5f7fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }");
-            out.println(".alberti-container { max-width: 800px; width: 100%; padding: 2rem; }"); // Cambiado de 600px a 800px
+            out.println(".alberti-container { max-width: 800px; width: 100%; padding: 2rem; }"); 
             out.println(".alberti-card { padding: 2rem; border-radius: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1); background: #fff; }");
-            out.println(".result-container { max-width: 800px; width: 100%; }"); // Nuevo estilo para el contenedor de resultados
+            out.println(".result-container { max-width: 800px; width: 100%; }"); 
             out.println(".form-label { font-weight: 500; color: #495057; }");
             out.println(".visual-guide { background: #f8f9fa; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem; border-left: 4px solid #0d6efd; }");
             out.println(".disco-visual { display: flex; justify-content: center; margin: 1rem 0; gap: 2rem; flex-wrap: wrap; }");
@@ -173,14 +163,13 @@ public class CifradoAlbertiServlet extends HttpServlet {
             out.println(".btn-action { min-width: 100px; }");
             out.println(".example { font-size: 0.9em; color: #6c757d; margin-top: 0.5rem; }");
             out.println(".result-disks { font-family: monospace; letter-spacing: 2px; white-space: nowrap; overflow-x: auto; }"); // Añadido white-space y overflow
-            out.println(".result-text { word-break: break-all; }"); // Nuevo estilo para el texto de resultado
+            out.println(".result-text { word-break: break-all; }"); 
             out.println("</style>");
             out.println("</head>");
             out.println("<body>");
             out.println("<div class='alberti-container'>");
             out.println("<div class='alberti-card'>");
 
-            // Título
             out.println("<h2 class='text-center mb-4'><i class='bi bi-lock'></i> Cifrado de Alberti</h2>");
 
             // Mostrar error si existe
